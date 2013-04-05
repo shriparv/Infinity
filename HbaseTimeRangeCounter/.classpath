@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<classpath>
+	<classpathentry kind="src" path="src"/>
+	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-1.7"/>
+	<classpathentry exported="true" kind="lib" path="/home/shashwat/hadoop/hbase/hbase-0.92.1.jar"/>
+	<classpathentry exported="true" kind="lib" path="/home/shashwat/hadoop/hbase/lib/commons-configuration-1.6.jar"/>
+	<classpathentry exported="true" kind="lib" path="/home/shashwat/hadoop/hbase/lib/commons-lang-2.5.jar"/>
+	<classpathentry exported="true" kind="lib" path="/home/shashwat/hadoop/hbase/lib/commons-logging-1.1.1.jar"/>
+	<classpathentry exported="true" kind="lib" path="/home/shashwat/hadoop/hbase/lib/log4j-1.2.16.jar"/>
+	<classpathentry exported="true" kind="lib" path="/home/shashwat/hadoop/hbase/lib/slf4j-api-1.5.8.jar"/>
+	<classpathentry exported="true" kind="lib" path="/home/shashwat/hadoop/hbase/lib/slf4j-log4j12-1.5.8.jar"/>
+	<classpathentry exported="true" kind="lib" path="/home/shashwat/hadoop/hbase/lib/zookeeper-3.4.3.jar"/>
+	<classpathentry exported="true" kind="lib" path="/home/shashwat/hadoop/hadoop/hadoop-core-1.0.3.jar"/>
+	<classpathentry kind="output" path="bin"/>
+</classpath>
