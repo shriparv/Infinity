@@ -1,0 +1,116 @@
+#!bin/sh
+hadoopPath="/usr/lib/hadoop"
+hbasePath="/usr/lib/hbase"
+
+
+returnEPOCTimeHBase()
+{
+:>/tmp/returEPOC.sh
+echo "
+#!bin/sh
+exec hbase shell  << EOF
+import java.text.SimpleDateFormat
+import java.text.ParsePosition
+SimpleDateFormat.new("\"yy/MM/dd-HH:mm:ss\"").parse("\"$1\"", ParsePosition.new(0)).getTime()
+exit
+EOF">>/tmp/returEPOC.sh
+yd=`sh /tmp/returEPOC.sh $1|tail -n 2|head -n 1|awk '{print $2}'`
+echo $yd
+}
+
+args=`echo $#`
+
+if [ "$args" -lt "4" ];then
+        clear
+        echo -e "Invalid Paramenter Please Check Uses\n"
+        echo -e "Uses : \nsh incrimentalBackup.sh [<(D)-for Daily -or- (M)-for Monthly -or- (W)-for Weekly -or- (Y)-for Yearly -or- (F)- for Full Backup] [<TableName>] [<TargetPath> eg : hdfs://<targetclusterhostname>:9000/Backup/tableName>] [<Local path eg: /Backup/tableName>]\n"
+else
+        tPath=`echo $3 | grep hdfs`
+        if [[ ! -z "$tPath" ]];then
+        BackupOption=$1
+        TableToBackup=$2
+        TargetPath=$3
+        LocalPathToCopy=$4
+        todayDate=`date +'%y/%m/%d'`"-00:00:00"
+        startDate=""
+        endDate=""
+        tdEPOC=""
+        ydEPOC=""
+        fileNameExport=""
+
+        a="Invalid Option"
+        case "$BackupOption" in
+                D)
+                 a="Daily_Incrimental"
+                        yesterdayDate=`date -d "1 days ago" +'%y/%m/%d'`"-00:00:00"
+                        ydEPOC=$(returnEPOCTimeHBase "$yesterdayDate")
+                        tdEPOC=$(returnEPOCTimeHBase "$todayDate")
+                        startDate=$ydEPOC
+                        endDate=$tdEPOC
+                        fileNameExport="DailyBackup_"`date +'%y_%m_%d_%H_%M'`
+                 ;;
+                W)
+                a="Weekly_Incrimental"
+                        yesterdayDate=`date -d "1 week ago" +'%y/%m/%d'`"-00:00:00"
+                        ydEPOC=$(returnEPOCTimeHBase "$yesterdayDate")
+                        tdEPOC=$(returnEPOCTimeHBase "$todayDate")
+                        startDate=$yesterdayDate
+                        endDate=$todayDate
+                        fileNameExport="WeeklyBackup_"`date +'%y_%m_%d_%H_%M'`
+                ;;
+                M)
+                a="Monthly_Incrimental"
+                        yesterdayDate=`date -d "1 month ago" +'%y/%m/%d'`"-00:00:00"
+                        ydEPOC=$(returnEPOCTimeHBase "$yesterdayDate")
+                        tdEPOC=$(returnEPOCTimeHBase "$todayDate")
+                        startDate=$yesterdayDate
+                        endDate=$todayDate
+                        fileNameExport="MonthlyBackup_"`date +'%y_%m_%d_%H_%M'`
+                ;;
+                Y)
+                a="Yearly_Incrimental"
+                        yesterdayDate=`date -d "1 year ago" +'%y/%m/%d'`"-00:00:00"
+                        ydEPOC=$(returnEPOCTimeHBase "$yesterdayDate")
+                        tdEPOC=$(returnEPOCTimeHBase "$todayDate")
+                        startDate=$yesterdayDate
+                        endDate=$todayDate
+                        fileNameExport="YearlyBackup_"`date +'%y_%m_%d_%H_%M'`
+                ;;
+                F)
+                a="Full_Backup"
+                startDate=0
+                endDate=9999999999999
+                fileNameExport="FullBackup_"`date +'%y_%m_%d_%H_%M'`
+                ;;
+
+                *)
+                a="Invalid Option" ;;
+        esac
+        clear
+
+        echo "$a Backup will Start for table $TableToBackup to target Directory $TargetPath/Backup/$a/$fileNameExport and localBackup Directory as $LocalPathToCopy between $startDate and $endDate"
+        echo "Do You Want to continue (Y/N)? "
+        read option
+
+
+                if [[ $option == "Y" ]];then
+                        OUT_FILE=/tmp/dfsdetail.jsp
+                        targetWebUiURL=`echo $TargetPath |cut -d/ -f3,3|cut -d: -f1`
+                        wget -T 10 -t 5 -O $OUT_FILE -q http://$targetWebUiURL:50070/dfshealth.jsp
+                        DFS_Remaining=`grep "Configured Capacity" $OUT_FILE | awk '{print $41}'`" "`grep "Configured Capacity" $OUT_FILE | awk '{print $42}' | cut -d'<' -f1`
+                        var=`echo $DFS_Remaining|awk '{print $1}'`
+                        echo $var
+                        v=`echo "$var > 2"|bc`
+
+                        if [[ $v -eq 1 ]]; then
+                                export HADOOP_CLASSPATH=/usr/local/hbase/hbase-0.90.1-cdh3u0.jar:/usr/lib/zookeeper/zookeeper.jar:/usr/lib/hadoop/lib:/usr/lib/hadoop:/usr/lib/hbase/lib:/usr/lib/hbase
+
+                        $hadoopPath/bin/hadoop jar $hbasePath/hbase-0.90.1-cdh3u0.jar export -D mapred.output.compress=true -D mapred.output.compression.codec=org.apache.hadoop.io.compress.BZip2Codec -D mapred.output.compression.type=BLOCK  $TableToBackup $TargetPath/Backup/$a/$fileNameExport 1 $ydEPOC $tdEPOC
+
+                        fi
+
+                else
+                        echo "Please correct !"
+                fi
+        fi
+fi
